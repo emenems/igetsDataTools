@@ -1,0 +1,11 @@
+% Correction file in plotGrav format.
+% ID  1 = removing steps, 2 = remove anomalous time intervals (set to NaN), 3 = interpolate intervals linearly, 4 = interpolate intervals using spline
+% CH  is the channel number shown in plotGrav
+%		starting point (time)	end point (time)    	y1		   	y2			Description
+%ID CH  yyyy mm dd hh mm ss     yyyy mm dd hh mm ss 	nm s^2		nm s^2		do_not_leave_empty_space
+2	7	2015 02 28 21 49 19		2015 03 05 10 43 21		NaN			NaN			Initial_Issues
+3	7	2015 03 30 00 14 04 	2015 03 30 05 23 29		NaN			NaN			Earthquake
+3	7	2015 03 31 08 49 14		2015 03 31 16 54 31		NaN			NaN			Heigh_Neise_allPositive
+3	7	2015 03 31 23 07 00		2015 03 31 23 33 12		NaN			NaN			Unknown_Positive_Peak	
+1	7	2015 04 16 14 48 32		2015 04 16 17 01 43		0.00		-201.278	ColdHead_Removed
+3 	7	2015 04 16 12 13 12 	2015 04 16 17 02 28 	NaN 		NaN			ColdHead_Removed

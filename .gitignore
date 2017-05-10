@@ -1,0 +1,7 @@
+*.tsf
+*.ggp
+*.aux
+*.log
+*.mat
+*.asv
+octave-workspace
