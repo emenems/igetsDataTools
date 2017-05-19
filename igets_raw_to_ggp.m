@@ -1,4 +1,5 @@
-%% Convert 1 second iGrav tsoft files to ggp
+function igets_raw_to_ggp(varargin)
+%IGETS_RAW_TO_GGP Convert 1 second iGrav/SG tsoft files to ggp/igets
 % This script will convert daily tsoft files to ggp/igets monthly files
 % Following data structure of INPUT files is required
 %     'input_path\input_prefix_YYYY\MMDD\Data_input_prefix_MMDD.tsf
@@ -19,61 +20,139 @@
 %   7. Save the results to output file (existence of sub-folder structure
 %   will be checked)
 % 
-% Script tested on Matlab R2015b (preferred) and Octave 4.2.1 (rather slow)
+% Tested on Matlab R2015b (preferred) and Octave 4.2.1 (rather slow)
+%
+% INPUTS:
+%  'start' 		  ... starting time 
+%                       Example:  [2015 03 05 14 00 00]
+%  'stop'         ... end time 
+%                       Example:  [2017 03 06 23 59 59];
+%  'input_path'   ... input path for loading raw tsoft files 
+%                       Example:  'y:\iGrav\iGrav006 Data'
+%  'input_prefix' ... input tsoft file name prefix
+%                       Example:  'iGrav006'
+%  'input_suffix' ... input tsoft file name suffix
+%                       Example:  '.tsf'
+%  'input_channels'.. channels/columns from input file
+%                       Example:  [1,2]
+%  'channel_names'... channel names used for output file
+%                       Example:  {'gravity','pressure'}
+%  'channel_units'... channel units used for output file
+%                       Example:  {'V','hPa'}
+%  'output_path'  ... output (monthly) data folder
+%                       Example:  'f:\we006\Level1';
+%  'output_prefix'... output (monthly) data prefix
+%                       Example:  'IGETS-IGRAV-SEC-we006-'
+%  'output_suffix'... output (monthly) data suffix
+%                       Example:  '00.ggp'
+%  'logfile_prefix'.. logfile prefix (same folder as 'output_path')
+%                       Example:  'IGETS-IGRAV-AUXLOG-we006-'
+%  'logfile_suffix'.. logfile suffix
+%                       Example:  '00.log';
+%  'file_format'  ... 'preterna' or 'eterna'
+%  'instrument'   ... name of the instrument for igets file header
+%                       Example: 'iGrav006'
+%  'station'      ... name of the station for igets file header
+%                       Example:  'Wettzell'
+%  'latitude'     ... station latitude + accuracy
+%                       Example:  '49.1449    0.0001 measured'
+%  'longitude'    ... station longitude + accuracy
+%                       Example:  '12.8769    0.0001 measured'
+%  'height'       ... station longitude + accuracy
+%                       Example:  '609.76     0.3000 measured'
+%  'author'       ... file author
+%                       Example:  'M. Mikolaj (mikolaj@gfz-potsdam.de)'
+%  'header_add'   ... add text to igets file header
+%                       Example:  {'Sensor height 1.05 m (0.03 measured)'}
+%  'out_precision'... output precision
+%                       Example:  {'%10.6f','%10.4f'}
+%  'nanval'       ... flagged NaN values
+%                       Example:  99999.999
+%  'fill_missing' ... Set what longest time interval of NaNs or missing
+%                       data should be filled with interpolated values
+%                       Example: 10
+%  'header_offset'... row offset in header
+%                       Example: 21
 %
 %                                                    M.Mikolaj
 %                                                    mikolaj@gfz-potsdam.de
-clear
-close all
-clc
-% Add path containing hydroGravity library (loadtsf.m, findTimeStep.m, ... functions)
-% Download from: https://github.com/emenems/hydroGravityLib
-addpath('f:\mikolaj\code\libraries\matlab_octave_library')
 
-%% Main SETTINGS
-% Process time interval
-start_time = [2015 03 05 14 00 00];% e.g., [2015 03 05 14 00 00];
-end_time   = [2017 03 06 23 59 59];% e.g., [2017 03 06 23 59 59];
-% INPUT File path/name settings (to tsf files)
-input_path = 'y:\iGrav\iGrav006 Data'; % year/month/day will be generated automatically
-input_prefix = 'iGrav006'; % file name prefix
-input_suffix = '.tsf';
-% Set which channels should be exported (e.g., gravity and pressure
-% channels in INPUT tsf files)
-input_channels = [1,2];% e.g, [15] for PCB temperature;
-channel_names = {'gravity','pressure'}; % e.g., {'PCB-Temp'} ;
-channel_units = {'V','hPa'};% e.g., {'degC'};
-% Set what longest time interval of NaNs or missing data should be filled
-% with interpolated values 
-fill_missing = 10; % (seconds/input time step)
+%% Read user input
+% First check if correct number of input arguments
+if nargin > 2 && mod(nargin,2) == 0
+    % Count input parameters
+    in = 1;
+    % Try to find input parameters
+    while in < nargin
+        % Switch between function parameters
+        switch varargin{in}
+            case 'start'
+                start_time = varargin{in+1};
+            case 'stop'        
+                end_time = varargin{in+1};
+            case 'input_path'
+                input_path = varargin{in+1};
+            case 'input_prefix'
+                input_prefix = varargin{in+1};
+            case 'input_suffix'
+                input_suffix = varargin{in+1};
+            case 'output_path'
+                output_path = varargin{in+1};
+            case 'output_prefix'
+                output_prefix = varargin{in+1};
+            case 'output_suffix'
+                output_suffix = varargin{in+1};
+            case 'logfile_prefix'
+                logfile_prefix = varargin{in+1};
+            case 'logfile_suffix'
+                logfile_suffix = varargin{in+1};
+            case 'file_format'
+                file_format = varargin{in+1};
+            case 'instrument'
+                instrument = varargin{in+1};
+            case 'station'
+                station = varargin{in+1};
+            case 'header_add'
+                header_add = varargin{in+1};
+            case 'latitude'
+                latitude = varargin{in+1};
+            case 'longitude'
+                longitude = varargin{in+1};
+            case 'height'
+                height = varargin{in+1};
+            case 'author'
+                author = varargin{in+1};
+            case 'out_precision'
+                out_precision = varargin{in+1};
+            case 'nanval'
+                nanval = varargin{in+1};
+            case 'fill_missing'
+                fill_missing = varargin{in+1};
+            case 'input_channels'
+                input_channels = varargin{in+1};
+            case 'channel_names'
+                channel_names = varargin{in+1};
+            case 'channel_units'
+                channel_units = varargin{in+1};
+            case 'header_offset'
+                header_offset = varargin{in+1};
+        end
+        % Increase by 2 as parameters are in pairs!
+        in = in + 2;
+    end
+elseif nargin > 0 && mod(nargin,2) ~= 0
+    error('Set even number of input parameters')
+end
 
-% Set OUTPUT file naming
-output_path = 'f:\mikolaj\data\wettzell\grav\sg\igrav006\igets\Wettzell\we006\Level1'; % Level1 data
-output_prefix = 'IGETS-IGRAV-SEC-we006-'; % e.g. for auxiliary 'IGETS-IGRAV-AUX-we006-';
-output_suffix = '00.ggp'; % e.g. 00.aux auxiliary
-% Set output logfile prefix (will be created for each month). Same output 
-% folder as for data will be used!
-logfile_prefix = 'IGETS-IGRAV-STATLOG-we006-'; % e.g., 'IGETS-IGRAV-AUXLOG-we006-'
-logfile_suffix = '00.log';
-
-% Set header for OUTPUT file
+%% Create header for output files
 header =   {'Filename','';... % file name will be appended automatically
-            'Station','Wettzell';...
-            'Instrument','iGrav006';...
-            'N. Latitude (deg)', '49.1449    0.0001 measured';...
-            'E. Longitude (deg)','12.8769    0.0001 measured';...
-            'Elevation MSL (m)', '609.76     0.3000 measured';...
-            'Author','M. Mikolaj (mikolaj@gfz-potsdam.de)'};
-% Header footer (OUTPUT)
-header_add = {'To get (geoid) height of the sensor add 1.05 m (0.03 measured)';... %. e.g, 'The PCB-Temp is measured inside the iGrav head'
-              'Always check the STATLOG files for details on time series quality';... % e.g., 'Variations of PCB-Temp can affect the measured gravity'
-              'Processing scripts can be found at: https://github.com/emenems/igetsDataTools'};
-
-% Set OUTPUT file format (more or less fixed)
-header_offset = 21; % fixed for IGETS
-out_precision = {'%10.6f','%10.4f'}; % e.g., {'%10.4f'}
-file_format = 'preterna';
-nanval = 99999.999; % Flagged NaN values
+            'Station',station;...
+            'Instrument',instrument;...
+            'N. Latitude (deg)', latitude;...
+            'E. Longitude (deg)',longitude;...
+            'Elevation MSL (m)', height;...
+            'Author',author};
+header_add(end+1) = {'Processing scripts can be found at: https://github.com/emenems/igetsDataTools'};
 
 %% Prepare for loading
 % Convert the input starting time and ending time to matlab format and
@@ -103,9 +182,11 @@ for m = 1:length(months)
         % Open logfile+write header
         fid = fopen(fullfile(file_output1,file_log),'w'); 
         fprintf(fid,'Filename 			: %s\n',file_log);
-        fprintf(fid,'Station 			: %s\n',header{2,2});
-        fprintf(fid,'Instrument 			: %s\n',header{3,2});
-        fprintf(fid,'Author 				: %s\n',header{7,2});
+        fprintf(fid,'Station 			: %s\n',station);
+        fprintf(fid,'Instrument 			: %s\n',instrument);
+        fprintf(fid,'Author 				: %s\n',author);
+        fprintf(fid,'All time stamps are approximate\n');
+        fprintf(fid,'Processing scripts available at: https://github.com/emenems/igetsDataTools\n');
         fprintf(fid,'yyyymmdd hhmmss comments\nC*************************************************\n');
         fprintf(fid,'77777777\n');
     end
@@ -255,5 +336,4 @@ for m = 1:length(months)
     clc
 end
 
-%% End
-rmpath('f:\mikolaj\code\libraries\matlab_octave_library')
+end % function
